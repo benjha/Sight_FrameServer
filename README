@@ -1,0 +1,78 @@
+
+*External dependencies
+
+- TurboJPEG Library
+- LibPNG12 (a different version should work)
+
+I. Compilation
+
+$~/Sight_FrameServer/cd Release
+$~/Sight_FrameServer/Release/make
+
+
+Note: all auxiliary files for compilation are available in Release directory. If TurboJPEG Library and/or LibPNG12 are not installing in default locations edit makefile file to add the new paths.
+
+II. Run
+
+1. Run the Server:
+
+ ./Sight_FrameServer 
+
+Sight_FrameServer will listen to port 9002. Make sure this port is open.
+
+2. Run the Client
+
+Open Sight_Client directory and double click on client.html file, then make click on "Stream" button. Sight_FrameServer will generate a 
+random color image. 
+
+Controls:
+
+-Press keys '1' and '2' to swtich between rendering modes.
+-Sight_FrameServer will output mouse callbacks. 
+-Clicking on "Capture" button to save a snapshot, they will be saved in Sight_FrameServer directory.
+
+
+III. Running Sight_FrameServer remotely in a Cluster
+
+1. Server Configuration
+
+Deploy Sight_FrameServer in the remote system.
+
+Open Sight_FrameServer/header/cBroadCastServer.h file, comment FULLHD macro (code line 20) and uncomment REMOTE macro (code line 19). Follow
+compilation instructions. 
+
+2. Client Configuration
+
+In your local system open Sight_FrameServer/Sight_Client/websocketConnection.js, set  jpegCompression variable (code line 18) to true. Save the file.
+
+3. Once configuration is done, you will need two terminals.
+
+In terminal 1:
+
+- Connect to your remote server (and launch and interactive job).
+- Check which node  is running  the interactive job (this will be used for  tunneling):
+- Run Sight_FrameServer as explained in Section II, make sure 9002 port is open.
+
+In Terminal 2  open a tunneling connection with the node is running the interactive job using port 9002:
+
+$ ssh userid@myserver.com -L 9002:myNodeName:9002
+
+In your local system run the client as explained in Section II.
+
+IV. Running Sight_FrameServer remotely in a server
+
+Follow steps 1 and 2 of Section III.
+
+3. Once configuration is done, you will need two terminals.
+
+In terminal 1:
+
+- Connect to your remote server.
+- Run Sight_FrameServer as explained in Section II, make sure 9002 port is open.
+
+In Terminal 2  open a tunneling connection with the server using port 9002:
+
+$ ssh userid@myserver.com -L 9002:myserver.com:9002
+
+In your local system run the client as explained in Section II.
+
