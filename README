@@ -1,8 +1,10 @@
 
 *External dependencies
 
-- TurboJPEG Library
+- TurboJPEG Library (CPU based compression)
 - LibPNG12 (a different version should work)
+- NvPipe (H264 GPU based compression https://github.com/NVIDIA/NvPipe)
+
 
 I. Compilation
 
@@ -11,6 +13,10 @@ $~/Sight_FrameServer/Release/make
 
 
 Note: all auxiliary files for compilation are available in Release directory. If TurboJPEG Library and/or LibPNG12 are not installing in default locations edit makefile file to add the new paths.
+
+NvPipe Notes:
+-Client uses Broadway.js for H264 decoding, thus only H264 encoding is supported using NvPipe.
+-Enable NV_ENC_H264_PROFILE_BASELINE_GUID in NvPipe.
 
 II. Run
 
