@@ -2,11 +2,10 @@
  * Distributed under the OSI-approved Apache License, Version 2.0.  See
  * accompanying file Copyright.txt for details.
  */
-
-
 var output;
 var canvas;
-var pixels;
+var canvasH264;
+var jpegImg;
 var wsUri	= "ws://localhost:9002/";
 var reader	= new FileReader();
 var ctx;
@@ -16,6 +15,9 @@ var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
 var jpegCompression = true;
+var h264Compression = false;
+var noCompression   = false;
+var playerH264; 
 
 //var imageheight = 512;
 //var imagewidth	= 512;
@@ -25,10 +27,38 @@ function canvasResize ()
 console.log (canvas.width + ", " + canvas.height);
 }
 
+function addMyListeners (c)
+{
+    // Adding mouse events
+	// Some of invoked functions are declared in peripherals.js
+	// For every new UI widget, its corresponding function should 
+	// be declared in peripherals.js
+	c.addEventListener( "contextmenu", preventDefaultHandler,	true );
+	c.addEventListener( "mousedown", 	mouseDownHandler,	true );
+	c.addEventListener( "mouseup",	mouseUpHandler, 	true );
+	c.addEventListener( "mousemove", 	mouseMoveHandler, 	true );
+	c.addEventListener( "mousewheel", 	mouseWheelHandler, 	true );
+	c.addEventListener( "mousewheel", 	mouseWheelHandler, 	true );
+	c.addEventListener( "mouseout", 	mouseOutHandler, 	true );
+
+    c.addEventListener( "resize", 	canvasResize, 	false );
+	document.addEventListener("keypress", 	keyDownHandler, 	false );
+    //document.addEventListener("keyup", 	keyUpHandler, 		false );
+}
+
+function createMainCanvasAndContext ()
+{
+    canvas = document.createElement('canvas');
+    canvas.className = "canvas";
+    canvas.width = 1920;
+    canvas.height = 1080;
+    canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);"        
+    document.getElementById('main').appendChild(canvas);
+    ctx = canvas.getContext('2d');     
+}
+
 function init() 
 { 
-	output = document.getElementById("output"); 
-
 	// cheking for websocket support
 	if (window.WebSocket) {
 		connectAndCallbacks();
@@ -37,38 +67,43 @@ function init()
 	{
 		console.log ("This browser does not support Websocket.");
 	}
-
-	
-	// adding mouse events
-	canvas = document.getElementById('canvas');
-
-	// Some of invoked functions are declared in peripherals.js
-	// For every new UI widget, its corresponding function should 
-	// be declared in peripherals.js
-	canvas.addEventListener( "contextmenu", preventDefaultHandler,	true );
-	canvas.addEventListener( "mousedown", 	mouseDownHandler,	true );
-	canvas.addEventListener( "mouseup",	mouseUpHandler, 	true );
-	canvas.addEventListener( "mousemove", 	mouseMoveHandler, 	true );
-	canvas.addEventListener( "mousewheel", 	mouseWheelHandler, 	true );
-	canvas.addEventListener( "mousewheel", 	mouseWheelHandler, 	true );
-	canvas.addEventListener( "mouseout", 	mouseOutHandler, 	true );
-
-	canvas.addEventListener( "resize", 	canvasResize, 	false );
-
-	document.addEventListener("keypress", 	keyDownHandler, 	false );
-	//document.addEventListener("keyup", 	keyUpHandler, 		false );
-
-	ctx 	= canvas.getContext('2d');
-	imgdata = ctx.getImageData(0,0,canvas.width,canvas.height);
-
-	pixels	= new Image ();
-	pixels.addEventListener('load', loadPixels, true );
+	//canvas = document.getElementById('canvas');
+    if (jpegCompression)
+    {
+        jpegImg	= new Image (); // jpeg IMAGE
+        jpegImg.addEventListener('load', loadPixels, true );    
+        createMainCanvasAndContext();
+        addMyListeners (canvas);
+    }
+	else if (h264Compression)
+	{
+		playerH264 = new Player({
+        webgl: "auto",
+		useWorker: true,
+		workerFile: "Broadway/Player/Decoder.js"
+		});
+        //canvas = playerH264.canvas;
+        document.getElementById('main').appendChild (playerH264.canvas).className = "canvas";
+        addMyListeners (playerH264.canvas);
+	}
+    else if (noCompression) // no compression
+    {
+        createMainCanvasAndContext ();
+        addMyListeners (canvas);
+        imgdata = ctx.getImageData(0,0,canvas.width,canvas.height);
+    }
 }
 
 function loadPixels ()
 {
-	ctx.drawImage(pixels, 0, 0);
+	ctx.drawImage(jpegImg, 0, 0);
+   
 //	console.log ("Load pixels");
+}
+
+function onPictureDecodedHandler() 
+{
+    console.log ("decoded");
 }
 
 function connectAndCallbacks ()
@@ -80,7 +115,7 @@ function connectAndCallbacks ()
 	websocket.onerror 	= function(evt) { onError	(evt)	};
 
 	// sets websocket's binary messages as ArrayBuffer type
-	//websocket.binaryType = "arraybuffer";	
+    	//websocket.binaryType = "arraybuffer";	
 	// sets websocket's binary messages as Blob type by default is Blob type
 	//websocket.binaryType = "blob";
 	
@@ -136,12 +171,19 @@ function readBlob (e)
 	if (jpegCompression)
 	{
 		var dataUrl = reader.result;
-		// removing the header, keep pixels
+		// removing the (blank) header, keep pixels
 		var img = dataUrl.split(',')[1];
-		pixels.src = 'data:image/jpg;base64,' + img;
+		jpegImg.src = 'data:image/jpg;base64,' + img;
 	}
-	else
+	else if (h264Compression)
 	{
+		var frame = new Uint8Array(reader.result);
+        	//console.log (frame);
+		playerH264.decode (frame);
+	}
+    else if (noCompression)
+	{
+        console.log("No compression");
 		// comment this when using jpeg compression
 		var img = new Uint8Array(reader.result);
 	
@@ -157,12 +199,12 @@ function readBlob (e)
 		// comment this when using jpeg compression
 		ctx.putImageData(imgdata,0,0);
 	}
+        
 }
 
 // message from the server
 function onMessage(e)
 {
-
 	if (typeof e.data == "string")
 	{
 		console.log ("String msg: ", e, e.data);
@@ -173,19 +215,14 @@ function onMessage(e)
 		
 		if (jpegCompression)
 		{
-			reader.readAsDataURL(blob);
+		    reader.readAsDataURL(blob);
 		}
-		else
+		else if (h264Compression || noCompression)
 		{
-			reader.readAsArrayBuffer(blob);
-		}		
+            reader.readAsArrayBuffer(blob);
+		}
+        
 	}
-	else if (e.data instanceof ArrayBuffer)
-	{
-		var img = new Uint8Array(e.data); 
-		console.log("Array msg:", + img[63] );
-	}
-
 }
 
 // if there is an error
@@ -229,12 +266,9 @@ function captureFrame ()
     
 function closingConnection()
 {
-    	alert('Streaming OFF...');
+    alert('Streaming OFF...');
 	websocket.send ("END  ");
 	stop = true;
-
-
-	
 	//websocket.close ();
 }
 

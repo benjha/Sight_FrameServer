@@ -45,7 +45,7 @@ all: Sight_FrameServer
 Sight_FrameServer: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "Sight_FrameServer" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L../../../Programs/lib -o "Sight_FrameServer" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

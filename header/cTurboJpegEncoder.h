@@ -9,8 +9,8 @@
 
 using namespace std;
 
-#define	JPEG_QUALITY		100
-#define COLOR_COMPONENTS	3
+#define	TJPEG_QUALITY		80
+#define TJPEG_COLOR_COMPONENTS	3
 
 
 class cTurboJpegEncoder
@@ -23,7 +23,9 @@ public:
 					width			= 0;
 					height			= 0;
 					compressor		= 0;
-					quality			= JPEG_QUALITY;
+					samplingFactor	= TJSAMP_444;
+					colorSpace		= TJPF_RGB;
+					quality			= TJPEG_QUALITY;
 				};
 
 				~cTurboJpegEncoder			(	)
@@ -32,13 +34,13 @@ public:
 					tjFree		(compressedImg);
 				}
 
-		void	setEncoderParams		( int quality_ = JPEG_QUALITY, int restart_interval  = 8, int interleaved = 0)
+		void	setEncoderParams		( int quality_ = TJPEG_QUALITY, int restart_interval  = 8, int interleaved = 0)
 		{
 			quality = quality_;
 
 		};
 
-		void	setImageParams			( int width_, int height_, int color_components = COLOR_COMPONENTS,
+		void	setImageParams			( int width_, int height_, int color_components = TJPEG_COLOR_COMPONENTS,
 										  int color_space 		= TJPF_RGB,
 										  int sampling_factor 	= TJSAMP_444 )
 		{

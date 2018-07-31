@@ -89,7 +89,7 @@ void setHandlers()
 	keyboardHandler = new cKeyboardHandler();
 	msgHandler 		= new cMessageHandler();
 	wsserver 		= new broadcast_server();
-	dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT);
+	dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 4);
 
 	// share the handlers between classes that will use them
 	// wsserver writes the state of the handlers

@@ -19,11 +19,12 @@
 class cDummyRenderer
 {
 public:
-	cDummyRenderer (int w, int h)
+	cDummyRenderer (int w, int h, int components = 3)
 	{
 		m_w = w;
 		m_h = h;
-		framebuffer = new unsigned char[m_w*m_h*3];
+		m_components = components;
+		framebuffer = new unsigned char[m_w*m_h*m_components];
 		m_mouseHandler = 0;
 		m_keyboardHandler = 0;
 		m_renderMode = 1;
@@ -47,25 +48,24 @@ public:
 	void render ()
 	{
 		unsigned int i;
+		unsigned char c = 0;
 		if (m_renderMode == 1)
 		{
-			for (i = 0; i < m_w * m_h * 3; i += 3)
+			for (i = 0; i < m_w * m_h * m_components; i++)
 			{
 				//std::cout << (int)pixels[i] << ", " << (int)pixels[i+1] << ", " << (int)pixels[i+2] << "\t\n";
 				framebuffer[i] = rand() % 255;
-				framebuffer[i + 1] = rand() % 255;
-				framebuffer[i + 2] = rand() % 255;
 			}
 		}
 		else if (m_renderMode == 2)
 		{
-			for (i = 0; i < m_w * m_h * 3; i += 3)
+			c = rand() % 255;
+			for (i = 0; i < m_w * m_h*m_components; i++)
 			{
-				//std::cout << (int)pixels[i] << ", " << (int)pixels[i+1] << ", " << (int)pixels[i+2] << "\t\n";
-				framebuffer[i] = 255;
-				framebuffer[i + 1] = 0;
-				framebuffer[i + 2] = 0;
+				framebuffer[rand() % (m_w * m_h*m_components)] = c;
+
 			}
+
 		}
 
 	};
@@ -138,6 +138,7 @@ public:
 private:
 
 	int 			m_renderMode;
+	int				m_components;
 	unsigned int	m_w, m_h;
 	unsigned char	*framebuffer;
 	// UI/Event Handlers to be used within cDummyRenderer class

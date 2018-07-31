@@ -16,8 +16,9 @@
 #include "cTurboJpegEncoder.h"
 #endif
 
-
-
+#ifdef NVPIPE_ENCODING
+#include "cNvPipeEncoder.h"
+#endif
 
 unsigned char webSocketKey;
 //extern bool		keyChangedFlag;
@@ -55,16 +56,27 @@ broadcast_server::broadcast_server() {
 
 #ifdef	JPEG_ENCODING
 	targetTime = TIME_RESPONSE;
-	jpegQuality = JPEG_QUALITY;
+	jpegQuality = TJPEG_QUALITY;
 	stTimer1 = high_resolution_clock::now();
 	stTimer2 = stTimer1;
 	jpegEncoder = new cTurboJpegEncoder();
 	jpegEncoder->setEncoderParams(jpegQuality);
-	jpegEncoder->setImageParams(IMAGE_WIDTH*RESOLUTION_FACTOR, IMAGE_HEIGHT*RESOLUTION_FACTOR);
+	jpegEncoder->setImageParams(IMAGE_WIDTH*RESOLUTION_FACTOR, IMAGE_HEIGHT*RESOLUTION_FACTOR, 4);
 	if (!(jpegEncoder->initEncoder())) {
-		cout << "Sight@Frameserver. Warning: JPEG Encoder failed at initialization \n";
+		std::cout << "Sight@Frameserver. Warning: JPEG Encoder failed at initialization \n";
 	}
-	cout << "Sight@Frameserver: JPEG Encoder initialized\n";
+	std::cout << "Sight@Frameserver: JPEG Encoder initialized\n";
+#endif
+
+#ifdef NVPIPE_ENCODING
+	m_nvpipe = new cNvPipeEncoderWrapper ( );
+
+	 if (!(m_nvpipe->initNvPipe(IMAGE_WIDTH, IMAGE_HEIGHT, MBPS, TARGET_FPS)))
+	 //if (!(m_nvpipe->initAV(IMAGE_WIDTH, IMAGE_HEIGHT, MBPS, TARGET_FPS)))
+	 {
+		 std::cout << "Sight@Frameserver: Failed to create encoder: " << NvPipe_GetError(NULL) << std::endl;
+	 }
+	 std::cout << "Sight@Frameserver: NvPipe Encoder & Wrapper initialized\n";
 #endif
 
 	pngEncoder = new cPNGEncoder ();
@@ -82,10 +94,16 @@ broadcast_server::~broadcast_server() {
 	// TODO: stop the server
 #ifdef JPEG_ENCODING
 	delete jpegEncoder;
-	delete pngEncoder;
 	jpegEncoder = 0;
-	pngEncoder = 0;
 #endif
+
+#ifdef NVPIPE_ENCODING
+	delete m_nvpipe;
+	m_nvpipe = 0;
+#endif
+
+	delete pngEncoder;
+	pngEncoder = 0;
 }
 
 void broadcast_server::on_open(connection_hdl hdl)
@@ -260,33 +278,9 @@ void broadcast_server::sendFrame(float *img) {
 //
 //=======================================================================================
 //
-void broadcast_server::sendFrame(unsigned char *img) {
-
-
-#ifdef CHANGE_RESOLUTION
-	static unsigned int half_w = IMAGE_WIDTH*RESOLUTION_FACTOR;
-	static unsigned int half_h = IMAGE_HEIGHT*RESOLUTION_FACTOR;
-	unsigned char *halfImg = new unsigned char [half_w * half_h * 3 ];
-	scale ( img, halfImg, RESOLUTION_FACTOR );
-#endif
-
-	if (saveFrame)
-	{
-		char date[128];
-		time_t rawtime;
-		struct tm * timeinfo;
-		time(&rawtime);
-		timeinfo = localtime (&rawtime);
-		strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
-		std::stringstream filename;
-		filename << "Sight_" << date << ".png";
-		pngEncoder->savePNG(filename.str(), img);
-		std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
-		saveFrame = false;
-	}
-
 #ifdef JPEG_ENCODING
-
+void broadcast_server::sendJPEGFrame (unsigned char *rgb)
+{
 #ifdef TIME_METRICS
 	high_resolution_clock::time_point t1 = high_resolution_clock::now();
 #endif
@@ -294,12 +288,12 @@ void broadcast_server::sendFrame(unsigned char *img) {
 #ifdef CHANGE_RESOLUTION
 	if (!jpegEncoder->encode(halfImg))
 #else
-	if (!jpegEncoder->encode(img))
+	if (!jpegEncoder->encode(rgb))
 #endif
 	{
-			cout << "Encoding error \n";
+			std::cout << "Sight@Frameserver: Encoding error \n";
 	}
-
+	//std::cout << "Sight@Frameserver: jpegEncoder compressed size " << jpegEncoder->getJpegSize() << std::endl;
 #ifdef TIME_METRICS
 	high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
@@ -324,7 +318,70 @@ void broadcast_server::sendFrame(unsigned char *img) {
 					<< ")" << std::endl;
 		}
 	}
-#else
+}
+#endif
+//
+//=======================================================================================
+//
+#ifdef NVPIPE_ENCODING
+void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
+{
+	if (!m_nvpipe->encodeAndWrapNvPipe(rgba))
+	{
+		std::cout << "Sight@Frameserver: Encoding error \n";
+	}
+	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
+	for (auto it : m_connections)
+	{
+		try
+		{
+			m_server.send(it, m_nvpipe->getImg(),
+					(size_t) m_nvpipe->getSize(),
+					websocketpp::frame::opcode::BINARY);
+			needMoreFrames = false;
+		}
+		catch (const websocketpp::lib::error_code& e)
+		{
+				std::cout << "Sight@Frameserver: SEND failed because: " << e << "(" << e.message()
+						<< ")" << std::endl;
+		}
+	}
+}
+#endif
+//
+//=======================================================================================
+//
+void broadcast_server::sendFrame(unsigned char *img)
+{
+#ifdef CHANGE_RESOLUTION
+	static unsigned int half_w = IMAGE_WIDTH*RESOLUTION_FACTOR;
+	static unsigned int half_h = IMAGE_HEIGHT*RESOLUTION_FACTOR;
+	unsigned char *halfImg = new unsigned char [half_w * half_h * 3 ];
+	scale ( img, halfImg, RESOLUTION_FACTOR );
+#endif
+
+	if (saveFrame)
+	{
+		char date[128];
+		time_t rawtime;
+		struct tm * timeinfo;
+		time(&rawtime);
+		timeinfo = localtime (&rawtime);
+		strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
+		std::stringstream filename;
+		filename << "Sight_" << date << ".png";
+		pngEncoder->savePNG(filename.str(), img);
+		std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
+		saveFrame = false;
+	}
+
+#ifdef JPEG_ENCODING
+	sendJPEGFrame	(img);
+#endif
+#ifdef NVPIPE_ENCODING
+	sendNvPipeFrame (img);
+#endif
+#ifdef FULLHD
 	con_list::iterator it;
 	for (it = m_connections.begin(); it != m_connections.end(); it++)
 	{
