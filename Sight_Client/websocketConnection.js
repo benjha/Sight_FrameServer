@@ -14,8 +14,8 @@ var stop 	= false;
 var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
-var jpegCompression = true;
-var h264Compression = false;
+var jpegCompression = false;
+var h264Compression = true;
 var noCompression   = false;
 var playerH264; 
 

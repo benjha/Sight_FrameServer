@@ -38,7 +38,8 @@ public:
 
 	~cNvPipeEncoderWrapper ()
 	{
-		NvPipe_Destroy(m_encoder);
+		if (m_encoder)
+			NvPipe_Destroy(m_encoder);
 		delete [] m_compressedImg;
 
         avformat_free_context(m_formatCtx);
@@ -48,6 +49,25 @@ public:
         if (m_AVframe)
         	av_frame_free (&m_AVframe);
 	};
+
+	bool reset ()
+	{
+		if (m_encoder)
+		{
+			NvPipe_Destroy(m_encoder);
+			m_encoder = NvPipe_CreateEncoder (NVPIPE_RGBA32, NVPIPE_H264, NVPIPE_LOSSY, m_bitrateMbps * 1000 * 1000, m_targetFps);
+			if (!m_encoder)
+			{
+				// TODO: design proper error messages
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+		return true;
+	}
 
 	/*
 	 * Uses NvPipe Encoder and libAV MP4 wrapper

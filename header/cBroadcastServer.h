@@ -16,8 +16,8 @@
 #include <websocketpp/server.hpp>
 #include <functional>
 
-#define REMOTE
-//#define REMOTE_GPU_ENCODING
+//#define REMOTE
+#define REMOTE_GPU_ENCODING
 //#define	FULLHD
 //#define EVEREST
 
@@ -115,6 +115,7 @@ private:
 
 #ifdef NVPIPE_ENCODING
 	cNvPipeEncoderWrapper					*m_nvpipe;
+	bool									m_clientClosed;
 #endif
 
 #ifdef JPEG_ENCODING

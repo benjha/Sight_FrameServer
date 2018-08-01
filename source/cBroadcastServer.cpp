@@ -74,9 +74,9 @@ broadcast_server::broadcast_server() {
 	 if (!(m_nvpipe->initNvPipe(IMAGE_WIDTH, IMAGE_HEIGHT, MBPS, TARGET_FPS)))
 	 //if (!(m_nvpipe->initAV(IMAGE_WIDTH, IMAGE_HEIGHT, MBPS, TARGET_FPS)))
 	 {
-		 std::cout << "Sight@Frameserver: Failed to create encoder: " << NvPipe_GetError(NULL) << std::endl;
+		 std::cout << "Sight@Frameserver: Failed to create GPU encoder: " << NvPipe_GetError(NULL) << std::endl;
 	 }
-	 std::cout << "Sight@Frameserver: NvPipe Encoder & Wrapper initialized\n";
+	 std::cout << "Sight@Frameserver: GPU Encoder & Wrapper initialized\n";
 #endif
 
 	pngEncoder = new cPNGEncoder ();
@@ -110,6 +110,20 @@ void broadcast_server::on_open(connection_hdl hdl)
 {
 	std::cout << "Sight@Frameserver: Web browser opened.\n";
 	m_connections.insert(hdl);
+
+#ifdef NVPIPE_ENCODING
+	// Need to reset GPU encoder for new connection
+	// so new SPS and PPS H264 frames are sent to the client
+	if (m_clientClosed)
+	{
+		if (!m_nvpipe->reset())
+		{
+			std::cout << "Sight@Frameserver: GPU encoder reset failed \n";
+		}
+		m_clientClosed = false;
+	}
+#endif
+
 }
 //
 //=======================================================================================
@@ -123,6 +137,9 @@ void broadcast_server::on_close(connection_hdl hdl)
 	std::cout << "Sight@Frameserver: Web browser closed\n";
 
 	m_connections.erase(hdl);
+#ifdef NVPIPE_ENCODING
+	m_clientClosed = true;
+#endif
 }
 /*
  * on_message is the entry point to access data sent by the HTML Viewer
