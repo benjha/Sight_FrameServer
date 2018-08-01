@@ -19,7 +19,7 @@ The following individuals and institutions are among the Contributors:
 * Benjamin Hernandez <hernandezarb@ornl.gov>
 
 
-if you use this dataset in a publication, a link to or citation of this repository would be appreciated.
+If you use this code in a publication, a link to or citation of this repository would be appreciated.
 
 @misc{SIGHT_FrameServer,
   auhor = {Benjam\'in Hern\'andez},
