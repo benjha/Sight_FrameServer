@@ -85,3 +85,14 @@ $ ssh userid@myserver.com -L 9002:myserver.com:9002
 
 In your local system run the client as explained in Section II.
 
+
+NOTICE:
+
+If you use this dataset in a publication, a link to or citation of this repository would be appreciated.
+
+@misc{SIGHT_FrameServer,
+  auhor = {Benjam\'in Hern\'andez},
+  title = {SIGHT Frameserver: a library for remote visualization.},
+  year  = {2018},
+  url   = {https://github.com/benjha/Sight_FrameServer},
+}

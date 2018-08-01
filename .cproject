@@ -44,10 +44,6 @@
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="turbojpeg"/>
 									<listOptionValue builtIn="false" value="NvPipe"/>
-									<listOptionValue builtIn="false" value="avformat"/>
-									<listOptionValue builtIn="false" value="avresample"/>
-									<listOptionValue builtIn="false" value="avcodec"/>
-									<listOptionValue builtIn="false" value="avutil"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.297985914" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="../../../Programs/lib"/>
@@ -114,10 +110,6 @@
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="turbojpeg"/>
 									<listOptionValue builtIn="false" value="NvPipe"/>
-									<listOptionValue builtIn="false" value="avformat"/>
-									<listOptionValue builtIn="false" value="avresample"/>
-									<listOptionValue builtIn="false" value="avcodec"/>
-									<listOptionValue builtIn="false" value="avutil"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.594945177" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="../../../Programs/lib"/>

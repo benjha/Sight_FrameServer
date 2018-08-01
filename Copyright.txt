@@ -18,7 +18,15 @@ The following individuals and institutions are among the Contributors:
 
 * Benjamin Hernandez <hernandezarb@ornl.gov>
 
-See version control history for details of individual contributions.
+
+if you use this dataset in a publication, a link to or citation of this repository would be appreciated.
+
+@misc{SIGHT_FrameServer,
+  auhor = {Benjam\'in Hern\'andez},
+  title = {SIGHT Frameserver: a library for remote visualization.},
+  year  = {2018},
+  url   = {https://github.com/benjha/Sight_FrameServer},
+}
 
 ------------------------------------------------------------------------------
 

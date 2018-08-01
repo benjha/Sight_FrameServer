@@ -27,13 +27,16 @@ public:
 		m_bitrateMbps = 0;
 		m_targetFps = 0;
 		m_frame = 1;
-		//libav mpeg4 wrapper stuff
+		//TODO: For now Broadway.js allows decoding H264 frames
+		// libav mpeg4 wrapper stuff
+		/*
 		m_formatCtx = 0;
 		m_outFormat = 0;
 		m_videoStream = 0;
 		m_codec = 0;
 		m_codecCtx = 0;
 		m_AVframe = 0;
+		*/
 	};
 
 	~cNvPipeEncoderWrapper ()
@@ -42,12 +45,15 @@ public:
 			NvPipe_Destroy(m_encoder);
 		delete [] m_compressedImg;
 
+		// TODO: For now Broadway.js allows decoding H264 frames
+		/*
         avformat_free_context(m_formatCtx);
         if (m_codecCtx)
         	avcodec_free_context(&m_codecCtx);
 
         if (m_AVframe)
         	av_frame_free (&m_AVframe);
+        	*/
 	};
 
 	bool reset ()
@@ -85,7 +91,9 @@ public:
 		{
 			return false;
 		}
+		// TODO: For now Broadway.js allows decoding H264 frames
 		// Initalize libav to enable MP4 wrapper
+		/*
 		const char *filename = "file.mp4";
 		av_register_all();
 		m_formatCtx = avformat_alloc_context();
@@ -137,13 +145,16 @@ public:
 	        }
 
 	    avformat_write_header(m_formatCtx, 0);
+	    */
 		return true;
 	};
 
 	/*
-	 * Uses libAV encoder and libAV MP4 wrapper
+	 * For now Broadway.js allows decoding H264 frames
+	 * TODO: Uses libAV encoder and libAV MP4 wrapper
 	 *
 	 */
+	/*
 	bool initAV (unsigned int w, unsigned int h, unsigned int bitrateMbps=10, unsigned int targetFps=30 )
 	{
 		m_width = w;
@@ -224,9 +235,8 @@ public:
 
 
 	    return true;
-
-
 	}
+	*/
 
 	bool encodeAndWrapNvPipe (unsigned char *rgba)
 	{
@@ -249,7 +259,7 @@ public:
 	        std::cerr << "cNvPipeEncode@encodeAndWrap: Encoding error: " << NvPipe_GetError(m_encoder) << std::endl;
 		}
 
-/*
+		/*
 		if (m_frame==1)
 		{
 			for (int i=0;i<m_compressedSize/1000; i++)
@@ -259,6 +269,7 @@ public:
 		}
 		*/
 		m_frame++;
+		// TODO: For now Broadway.js allows decoding H264 frames
 		//std::cout << "cNvPipeEncoderWrapper: NvPipe compressed size " << size << std::endl;
 		/*
 		if (m_frame<100)
@@ -291,14 +302,16 @@ public:
 		return true;
 	};
 
+	/*
+	 * TODO: For now Broadway.js allows decoding H264 frames
+	 */
+	/*
 	bool encodeAndWraplibAV (unsigned char *rgba)
 	{
 		m_AVframe->data[0] = rgba;
 		avcodec_send_frame(m_codecCtx,m_AVframe);
-
-
 	}
-
+	*/
 
 	unsigned char *getImg 		(	)
 	{
@@ -315,12 +328,14 @@ private:
 	unsigned char 		*m_compressedImg;
 	NvPipe				*m_encoder;
 
+	/* TODO: For now Broadway.js allows decoding H264 frames
 	AVFormatContext 	*m_formatCtx;
 	AVOutputFormat		*m_outFormat;
 	AVStream			*m_videoStream;
 	AVCodec				*m_codec;
 	AVCodecContext		*m_codecCtx;
 	AVFrame				*m_AVframe;
+	*/
 
 
 
