@@ -87,6 +87,9 @@ public:
     void 	run							( uint16_t 				port							);
     void 	sendFrame 					( float 				*img							);
     void 	sendFrame 					( unsigned char			*img							);
+#ifdef NVPIPE_ENCODING
+    void	sendFrame					( unsigned char *img, void *gpuFrameBufferPtr  );
+#endif
     void 	setFrame 					( float 				*img							);
     void 	setMouseHandler				( cMouseHandler			*mouseH							);
     void 	setKeyboardHandler			( cKeyboardHandler		*keyboardH						);
@@ -100,6 +103,7 @@ private:
     void	scale 					( unsigned char *in, unsigned char *out, float factor );
     void	sendJPEGFrame 			( unsigned char *rgb ); // img must be RGB 8 bits per channel
     void	sendNvPipeFrame 		( unsigned char *rgba ); // img must be RGBA 8 bits per channel
+    void	sendNvPipeFrame 		(void *rgbaDevice ); //
     bool				needMoreFrames, stop, saveFrame;
     typedef	std::set<connection_hdl,std::owner_less<connection_hdl>> con_list;
     server 				m_server;

@@ -52,7 +52,7 @@ function createMainCanvasAndContext ()
     canvas.className = "canvas";
     canvas.width = 1920;
     canvas.height = 1080;
-    canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);"        
+    canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);";        
     document.getElementById('main').appendChild(canvas);
     ctx = canvas.getContext('2d');     
 }
@@ -84,6 +84,7 @@ function init()
 		});
         //canvas = playerH264.canvas;
         document.getElementById('main').appendChild (playerH264.canvas).className = "canvas";
+        playerH264.canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);";  
         addMyListeners (playerH264.canvas);
 	}
     else if (noCompression) // no compression

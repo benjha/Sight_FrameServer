@@ -92,7 +92,7 @@ If you use this code  in a publication, a link to or citation of this repository
 
 @misc{SIGHT_FrameServer,
   auhor = {Benjam\'in Hern\'andez},
-  title = {SIGHT Frameserver: a library for remote visualization.},
+  title = {SIGHT Frameserver: a framework for remote visualization.},
   year  = {2018},
   url   = {https://github.com/benjha/Sight_FrameServer},
 }

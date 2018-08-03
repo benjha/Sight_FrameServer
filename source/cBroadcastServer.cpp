@@ -340,34 +340,6 @@ void broadcast_server::sendJPEGFrame (unsigned char *rgb)
 //
 //=======================================================================================
 //
-#ifdef NVPIPE_ENCODING
-void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
-{
-	if (!m_nvpipe->encodeAndWrapNvPipe(rgba))
-	{
-		std::cout << "Sight@Frameserver: Encoding error \n";
-	}
-	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
-	for (auto it : m_connections)
-	{
-		try
-		{
-			m_server.send(it, m_nvpipe->getImg(),
-					(size_t) m_nvpipe->getSize(),
-					websocketpp::frame::opcode::BINARY);
-			needMoreFrames = false;
-		}
-		catch (const websocketpp::lib::error_code& e)
-		{
-				std::cout << "Sight@Frameserver: SEND failed because: " << e << "(" << e.message()
-						<< ")" << std::endl;
-		}
-	}
-}
-#endif
-//
-//=======================================================================================
-//
 void broadcast_server::sendFrame(unsigned char *img)
 {
 #ifdef CHANGE_RESOLUTION
@@ -425,6 +397,98 @@ void broadcast_server::sendFrame(unsigned char *img)
 	delete [] halfImg;
 #endif
 }
+
+#ifdef NVPIPE_ENCODING
+void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
+{
+	if (!m_nvpipe->encodeAndWrapNvPipe(rgba))
+	{
+		std::cout << "Sight@Frameserver: Encoding error \n";
+	}
+	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
+	for (auto it : m_connections)
+	{
+		try
+		{
+			m_server.send(it, m_nvpipe->getImg(),
+					(size_t) m_nvpipe->getSize(),
+					websocketpp::frame::opcode::BINARY);
+			needMoreFrames = false;
+		}
+		catch (const websocketpp::lib::error_code& e)
+		{
+				std::cout << "Sight@Frameserver: SEND failed because: " << e << "(" << e.message()
+						<< ")" << std::endl;
+		}
+	}
+}
+//
+//=======================================================================================
+//
+void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
+{
+	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
+	{
+		std::cout << "Sight@Frameserver: Encoding error \n";
+	}
+	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
+	for (auto it : m_connections)
+	{
+		try
+		{
+			m_server.send(it, m_nvpipe->getImg(),
+					(size_t) m_nvpipe->getSize(),
+					websocketpp::frame::opcode::BINARY);
+			needMoreFrames = false;
+		}
+		catch (const websocketpp::lib::error_code& e)
+		{
+				std::cout << "Sight@Frameserver: SEND failed because: " << e << "(" << e.message()
+						<< ")" << std::endl;
+		}
+	}
+}
+//
+//=======================================================================================
+//
+void broadcast_server::sendFrame(unsigned char *img, void *gpuFrameBufferPtr)
+{
+#ifdef CHANGE_RESOLUTION
+	static unsigned int half_w = IMAGE_WIDTH*RESOLUTION_FACTOR;
+	static unsigned int half_h = IMAGE_HEIGHT*RESOLUTION_FACTOR;
+	unsigned char *halfImg = new unsigned char [half_w * half_h * 3 ];
+	scale ( img, halfImg, RESOLUTION_FACTOR );
+#endif
+
+	if (saveFrame)
+	{
+		char date[128];
+		time_t rawtime;
+		struct tm * timeinfo;
+		time(&rawtime);
+		timeinfo = localtime (&rawtime);
+		strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
+		std::stringstream filename;
+		filename << "Sight_" << date << ".png";
+		pngEncoder->savePNG(filename.str(), img);
+		std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
+		saveFrame = false;
+	}
+	if (gpuFrameBufferPtr)
+	{
+		sendNvPipeFrame (gpuFrameBufferPtr);
+	}
+	else
+	{
+		std::cout << "Optix Frame Buffer not shared with CUDA for encoding\n";
+		return;
+	}
+
+#ifdef CHANGE_RESOLUTION
+	delete [] halfImg;
+#endif
+}
+#endif
 //
 //=======================================================================================
 //

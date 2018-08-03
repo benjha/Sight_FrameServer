@@ -238,7 +238,7 @@ public:
 	}
 	*/
 
-	bool encodeAndWrapNvPipe (unsigned char *rgba)
+	bool encodeAndWrapNvPipe (void *rgba)
 	{
     	//std::cout << "encodeAndWrap \n";
 
