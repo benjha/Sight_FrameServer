@@ -15,8 +15,8 @@ var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
 var jpegCompression = false;
-var h264Compression = true;
-var noCompression   = false;
+var h264Compression = false;
+var noCompression   = true;
 var playerH264; 
 
 //var imageheight = 512;
@@ -51,7 +51,7 @@ function createMainCanvasAndContext ()
     canvas = document.createElement('canvas');
     canvas.className = "canvas";
     canvas.width = 1920;
-    canvas.height = 1080;
+    canvas.height = 1088;
     canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);";        
     document.getElementById('main').appendChild(canvas);
     ctx = canvas.getContext('2d');     
@@ -78,7 +78,7 @@ function init()
 	else if (h264Compression)
 	{
 		playerH264 = new Player({
-        webgl: "auto",
+        webgl: false,
 		useWorker: true,
 		workerFile: "Broadway/Player/Decoder.js"
 		});
@@ -179,7 +179,7 @@ function readBlob (e)
 	else if (h264Compression)
 	{
 		var frame = new Uint8Array(reader.result);
-        	//console.log (frame);
+        console.log (frame);
 		playerH264.decode (frame);
 	}
     else if (noCompression)

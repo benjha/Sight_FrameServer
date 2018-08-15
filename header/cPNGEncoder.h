@@ -71,8 +71,14 @@ public:
 
 				if (setjmp(png_jmpbuf(m_writeStruct)))
 					return false;
-
-				 png_set_compression_level		(m_writeStruct, Z_BEST_COMPRESSION);
+				/* Set the library compression level.  Currently, valid values range from
+				 * 0 - 9, corresponding directly to the zlib compression levels 0 - 9
+				 * (0 - no compression, 9 - "maximal" compression).  Note that tests have
+				 * shown that zlib compression levels 3-6 usually perform as well as level 9
+				 * for PNG images, and do considerably fewer caclulations.  In the future,
+				 * these values may not correspond directly to the zlib compression levels.
+				 */
+				 png_set_compression_level		(m_writeStruct, 3);
 				 png_set_compression_strategy	(m_writeStruct, 0);
 				 png_set_filter					(m_writeStruct, 0, PNG_FILTER_NONE);
 

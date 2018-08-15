@@ -24,14 +24,14 @@ public:
 		m_w = w;
 		m_h = h;
 		m_components = components;
-		framebuffer = new unsigned char[m_w*m_h*m_components];
+		m_framebuffer = new unsigned char[m_w*m_h*m_components];
 		m_mouseHandler = 0;
 		m_keyboardHandler = 0;
 		m_renderMode = 1;
 	};
 	~cDummyRenderer ( )
 	{
-		delete [] framebuffer;
+		delete [] m_framebuffer;
 	};
 	void setMouseHandler (cMouseHandler *mh)
 	{
@@ -43,7 +43,7 @@ public:
 	};
 	unsigned char *getFramebuffer ( )
 	{
-		return framebuffer;
+		return m_framebuffer;
 	};
 	void render ()
 	{
@@ -54,7 +54,7 @@ public:
 			for (i = 0; i < m_w * m_h * m_components; i++)
 			{
 				//std::cout << (int)pixels[i] << ", " << (int)pixels[i+1] << ", " << (int)pixels[i+2] << "\t\n";
-				framebuffer[i] = rand() % 255;
+				m_framebuffer[i] = rand() % 255;
 			}
 		}
 		else if (m_renderMode == 2)
@@ -62,7 +62,7 @@ public:
 			c = rand() % 255;
 			for (i = 0; i < m_w * m_h*m_components; i++)
 			{
-				framebuffer[rand() % (m_w * m_h*m_components)] = c;
+				m_framebuffer[rand() % (m_w * m_h*m_components)] = c;
 
 			}
 
@@ -140,7 +140,7 @@ private:
 	int 			m_renderMode;
 	int				m_components;
 	unsigned int	m_w, m_h;
-	unsigned char	*framebuffer;
+	unsigned char	*m_framebuffer;
 	// UI/Event Handlers to be used within cDummyRenderer class
 	cMouseHandler	*m_mouseHandler;
 	cKeyboardHandler *m_keyboardHandler;

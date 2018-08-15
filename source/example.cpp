@@ -46,6 +46,10 @@ void display()
 	{
 		wsserver->sendFrame(dummyRenderer->getFramebuffer());
 	}
+	if (wsserver->saveFrame())
+	{
+		wsserver->save(dummyRenderer->getFramebuffer());
+	}
 	//std::cout << "Display\n";
 }
 //
@@ -89,7 +93,8 @@ void setHandlers()
 	keyboardHandler = new cKeyboardHandler();
 	msgHandler 		= new cMessageHandler();
 	wsserver 		= new broadcast_server();
-	dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 4);
+	//dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 3); // use 3 -> RGB components for JPEG Encoding
+	dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 4); // use 4 -> RGBA components for GPU Encoding
 
 	// share the handlers between classes that will use them
 	// wsserver writes the state of the handlers
