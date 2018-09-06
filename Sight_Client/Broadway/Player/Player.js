@@ -128,6 +128,8 @@ p.decode(<binary>);
           canvasObj: self.canvasObj
         });
       };
+
+        websocket.send ("NXTFR");
       
     };
     
@@ -196,6 +198,7 @@ p.decode(<binary>);
 
       this.decode = function(parData, parInfo){
         self.decoder.decode(parData, parInfo);
+        //console.log ('@@@');
       };
       
     };

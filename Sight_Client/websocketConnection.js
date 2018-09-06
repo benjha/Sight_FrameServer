@@ -15,8 +15,8 @@ var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
 var jpegCompression = false;
-var h264Compression = false;
-var noCompression   = true;
+var h264Compression = true;
+var noCompression   = false;
 var playerH264; 
 
 //var imageheight = 512;
@@ -78,7 +78,7 @@ function init()
 	else if (h264Compression)
 	{
 		playerH264 = new Player({
-        webgl: false,
+        webgl: true,
 		useWorker: true,
 		workerFile: "Broadway/Player/Decoder.js"
 		});
@@ -102,11 +102,6 @@ function loadPixels ()
 //	console.log ("Load pixels");
 }
 
-function onPictureDecodedHandler() 
-{
-    console.log ("decoded");
-}
-
 function connectAndCallbacks ()
 {
 	websocket		= new WebSocket(wsUri); 
@@ -128,7 +123,6 @@ function connectAndCallbacks ()
 	peripherals.init(websocket);
 }
 
-
 // connection has been opened
 function onOpen(evt)
 {
@@ -149,7 +143,8 @@ function nextBlob (e)
 		//event.appendBytes(0);     // type (u8 0)  0 identifies an event of type MESSAGE 
 		//event.appendBytes ("NXTFR");
 		//websocket.send (event.consume(event.length));
-		websocket.send ("NXTFR");
+        if (jpegCompression || noCompression)
+            websocket.send ("NXTFR");
 	}
 	//console.log (stop);
 }
@@ -179,12 +174,13 @@ function readBlob (e)
 	else if (h264Compression)
 	{
 		var frame = new Uint8Array(reader.result);
-        console.log (frame);
+        	//console.log (frame);
 		playerH264.decode (frame);
+        
 	}
-    else if (noCompression)
+	else if (noCompression)
 	{
-        console.log("No compression");
+        	console.log("No compression");
 		// comment this when using jpeg compression
 		var img = new Uint8Array(reader.result);
 	

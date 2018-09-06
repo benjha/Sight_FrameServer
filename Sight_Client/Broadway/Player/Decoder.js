@@ -163,6 +163,7 @@ var Module=typeof Module!=="undefined"?Module:{};var moduleOverrides={};var key;
         };
         
         this.onPictureDecoded(copyU8, width, height, infos);
+         
         return;
         
       };
@@ -808,6 +809,8 @@ var Module=typeof Module!=="undefined"?Module:{};var moduleOverrides={};var key;
             setSliceCnt(e.data.options.sliceCnt);
 
             decoder.onPictureDecoded = function (buffer, width, height, infos) {
+                
+                
               
               // buffer needs to be copied because we give up ownership
               var copyU8 = new Uint8Array(getMem(buffer.length));
