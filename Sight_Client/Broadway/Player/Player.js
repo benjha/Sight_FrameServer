@@ -101,7 +101,7 @@ p.decode(<binary>);
     var lastWidth;
     var lastHeight;
     var onPictureDecoded = function(buffer, width, height, infos) {
-        
+    websocket.send ("NXTFR");    
         //console.log ("onPictureDecoded");
         //console.log (height);
       self.onPictureDecoded(buffer, width, height, infos);
@@ -111,7 +111,8 @@ p.decode(<binary>);
       if (!buffer || !self.render) {
         return;
       };
-      
+              
+    
       self.renderFrame({
         canvasObj: self.canvasObj,
         data: buffer,
@@ -129,7 +130,6 @@ p.decode(<binary>);
         });
       };
 
-        websocket.send ("NXTFR");
       
     };
     

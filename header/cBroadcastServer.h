@@ -16,9 +16,13 @@
 #include <websocketpp/server.hpp>
 #include <functional>
 
+#include "cTimer.h"
+#include "cStats.h"
+
+//#define STATS
 //#define REMOTE
-//#define REMOTE_GPU_ENCODING
-#define NO_COMPRESSION
+#define REMOTE_GPU_ENCODING
+//#define NO_COMPRESSION
 //#define EVEREST
 
 #define SERVER_PORT     9002
@@ -26,7 +30,8 @@
 
 #ifdef REMOTE_GPU_ENCODING
         #define NVPIPE_ENCODING
-        #define MBPS                            32
+        #define MBPS                            32 // Works for FULLHD
+		//#define MBPS                            256
         #define TARGET_FPS                      30
         //#define TWOK
         //#define FOURK
@@ -60,7 +65,7 @@
 #endif
 
 #ifdef FOURK
-        #define IMAGE_WIDTH     4096
+        #define IMAGE_WIDTH     3840
         #define IMAGE_HEIGHT    2160
 #endif
 
@@ -114,6 +119,7 @@ public:
     bool	sendMoreFrames				(	) 				{return needMoreFrames; };
     bool 	saveFrame					( 	)				{return m_saveFrame; };
     void	save						( unsigned char *img);
+    void	printStats					( );
 
 private:
 
@@ -134,6 +140,12 @@ private:
 
     // PNG Encoder
 	cPNGEncoder								*pngEncoder;
+	cTimer									m_netStatsTimer, m_statsTimer, m_sendTimer, m_encStatsTimer;
+	AverageStats							m_netStats; // reports round-trip latency encode -> send (server) -> receive (client) -> decoding (client) -> send Next_frame msg (client) -> receive Next_frame msg (server)
+	AverageStats							m_encStats; // reports encoder latency
+	AverageStats							m_sendStats; // reports send latency
+
+
 
 #ifdef NVPIPE_ENCODING
 	cNvPipeEncoderWrapper					*m_nvpipe;
@@ -152,7 +164,7 @@ private:
 	float 									targetTime;
 	//streaming timers used to calculate image transport throughput
 	high_resolution_clock::time_point		stTimer1, stTimer2;
-	// image transport duration in milliseconds
+	// image transport duration in microiseconds
 	std::chrono::microseconds				stDuration;
 #endif
 #ifdef SAVE_IMG

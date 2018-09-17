@@ -3,7 +3,6 @@
  * accompanying file Copyright.txt for details.
  */
 #include <sstream>
-#include <time.h>
 
 #include <cBroadcastServer.h>
 #include <cMouseEventHandler.h>
@@ -11,6 +10,7 @@
 #include <cMessageHandler.h>
 
 #include "cPNGEncoder.h"
+
 
 #ifdef JPEG_ENCODING
 #include "cTurboJpegEncoder.h"
@@ -65,7 +65,10 @@ broadcast_server::broadcast_server() {
 	if (!(jpegEncoder->initEncoder())) {
 		std::cout << "Sight@Frameserver. Warning: JPEG Encoder failed at initialization \n";
 	}
-	std::cout << "Sight@Frameserver: JPEG Encoder initialized\n";
+	else
+	{
+		std::cout << "Sight@Frameserver: JPEG Encoder initialized\n";
+	}
 #endif
 
 #ifdef NVPIPE_ENCODING
@@ -76,7 +79,10 @@ broadcast_server::broadcast_server() {
 	 {
 		 std::cout << "Sight@Frameserver: Failed to create GPU encoder: " << NvPipe_GetError(NULL) << std::endl;
 	 }
-	 std::cout << "Sight@Frameserver: GPU Encoder & Wrapper initialized\n";
+	 else
+	 {
+		 std::cout << "Sight@Frameserver: GPU Encoder & Wrapper initialized\n";
+	 }
 #endif
 
 	pngEncoder = new cPNGEncoder ();
@@ -85,7 +91,15 @@ broadcast_server::broadcast_server() {
 	{
 		std::cout << "Warning: PNG Encoder failed at initialization \n";
 	}
-	std::cout << "Sight@Frameserver: PNG Encoder initialized\n";
+	else
+	{
+		std::cout << "Sight@Frameserver: PNG Encoder initialized\n";
+	}
+#ifdef STATS
+    m_statsTimer.reset();
+    m_encStats.reset();
+    m_sendStats.reset();
+#endif
 }
 //
 //=======================================================================================
@@ -166,6 +180,10 @@ void broadcast_server::on_message(connection_hdl hdl, server::message_ptr msg) {
 			// These strings come from HTML viewer
 			if (val.str().compare("NXTFR") == 0
 					|| val.str().compare("STVIS") == 0) {
+#ifdef	STATS
+				m_netStats.add(m_netStatsTimer.getElapsedMilliseconds());
+#endif
+
 #ifdef	JPEG_ENCODING
 				stTimer2 = high_resolution_clock::now();
 //				adjustJpegQuality();
@@ -305,11 +323,27 @@ void broadcast_server::sendJPEGFrame (unsigned char *rgb)
 #ifdef CHANGE_RESOLUTION
 	if (!jpegEncoder->encode(halfImg))
 #else
-	if (!jpegEncoder->encode(rgb))
-#endif
+
+#ifdef STATS
+
+	m_netStatsTimer.reset();
+
+#endif // STATS
+
+#ifdef STATS
+    m_encStatsTimer.reset ();
+#endif //STATS
+
+    if (!jpegEncoder->encode(rgb))
+#endif // CHANGE RESOLUTION
 	{
 			std::cout << "Sight@Frameserver: Encoding error \n";
 	}
+
+#ifdef STATS
+    m_encStats.add(m_encStatsTimer.getElapsedMilliseconds());
+#endif
+
 	//std::cout << "Sight@Frameserver: jpegEncoder compressed size " << jpegEncoder->getJpegSize() << std::endl;
 #ifdef TIME_METRICS
 	high_resolution_clock::time_point t2 = high_resolution_clock::now();
@@ -320,9 +354,15 @@ void broadcast_server::sendJPEGFrame (unsigned char *rgb)
 	for (auto it : m_connections) {
 		try {
 
+#ifdef STATS
+			m_sendTimer.reset();
+#endif
 			m_server.send(it, jpegEncoder->compressedImg,
 					(size_t) jpegEncoder->getJpegSize(),
 					websocketpp::frame::opcode::BINARY);
+#ifdef STATS
+			m_sendStats.add (m_sendTimer.getElapsedMilliseconds());
+#endif
 
 			/*
 			m_server.send(it, std::string (reinterpret_cast<char*>(jpegEncoder->compressedImg)),
@@ -386,18 +426,30 @@ void broadcast_server::sendFrame(unsigned char *img)
 #ifdef NVPIPE_ENCODING
 void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 {
+#ifdef STATS
+	m_encStatsTimer.reset();
+#endif
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgba))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";
 	}
-	std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
+#ifdef STATS
+	m_encStats.add (m_encStatsTimer.getElapsedMilliseconds());
+#endif
+	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
 	for (auto it : m_connections)
 	{
 		try
 		{
+#ifdef STATS
+			m_sendTimer.reset ();
+#endif
 			m_server.send(it, m_nvpipe->getImg(),
 					(size_t) m_nvpipe->getSize(),
 					websocketpp::frame::opcode::BINARY);
+#ifdef STATS
+			m_sendStats.add(m_sendTimer.getElapsedMilliseconds());
+#endif
 			needMoreFrames = false;
 		}
 		catch (const websocketpp::lib::error_code& e)
@@ -412,19 +464,38 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 //
 void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 {
+#ifdef STATS
+
+	m_netStatsTimer.reset();
+
+#endif
+
+#ifdef STATS
+	m_encStatsTimer.reset();
+#endif
+
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";
 	}
+#ifdef STATS
+	m_encStats.add (m_encStatsTimer.getElapsedMilliseconds());
+#endif
 	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
 	for (auto it : m_connections)
 	{
 		try
 		{
+#ifdef STATS
+			m_sendTimer.reset ();
+#endif
 			m_server.send(it, m_nvpipe->getImg(),
 					(size_t) m_nvpipe->getSize(),
 					websocketpp::frame::opcode::BINARY);
 			needMoreFrames = false;
+#ifdef STATS
+			m_sendStats.add(m_sendTimer.getElapsedMilliseconds());
+#endif
 		}
 		catch (const websocketpp::lib::error_code& e)
 		{
@@ -594,4 +665,20 @@ void broadcast_server::save(unsigned char *img)
 	pngEncoder->savePNG(filename.str(), img);
 	std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
 	m_saveFrame = false;
+}
+//
+//=======================================================================================
+//
+void broadcast_server::printStats()
+{
+    // Statistics
+    const float updateMillis = 1000.0f;
+    bool statsTimerElapsed = m_statsTimer.getElapsedMilliseconds() >= updateMillis;
+    if (statsTimerElapsed)
+    {
+        m_statsTimer.reset();
+
+        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " " << m_sendStats.getAverage(updateMillis) << " " << m_encStats.getAverage(updateMillis) << " ms" << std::endl;
+
+    }
 }

@@ -60,6 +60,10 @@ void idle()
 	dummyRenderer->checkKeyboard();
 	dummyRenderer->checkMouse();
 
+#ifdef STATS
+	wsserver->printStats();
+#endif
+
 }
 //
 //=======================================================================================
@@ -93,8 +97,12 @@ void setHandlers()
 	keyboardHandler = new cKeyboardHandler();
 	msgHandler 		= new cMessageHandler();
 	wsserver 		= new broadcast_server();
-	//dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 3); // use 3 -> RGB components for JPEG Encoding
+#if defined(REMOTE) || defined(NO_COMPRESSION)
+	dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 3); // use 3 -> RGB components for JPEG Encoding
+#endif
+#ifdef REMOTE_GPU_ENCODING
 	dummyRenderer	= new cDummyRenderer (IMAGE_WIDTH, IMAGE_HEIGHT, 4); // use 4 -> RGBA components for GPU Encoding
+#endif
 
 	// share the handlers between classes that will use them
 	// wsserver writes the state of the handlers

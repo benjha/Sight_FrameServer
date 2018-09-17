@@ -6,10 +6,6 @@
 #define CNVPIPEENCODER_H_
 
 #include "NvPipe.h"
-extern "C" {
-	#include "libavformat/avformat.h"
-	#include "libavutil/mathematics.h"
-}
 /*
  *
  * h264 and hENVC GPU encoding in a MP4 wrapper
@@ -253,7 +249,7 @@ public:
 		// I frame (0 0 0 1 41) - ?
 		// Next frames are P frames (0 0 0 1 97)
 		//
-		m_compressedSize = NvPipe_Encode(m_encoder, rgba, m_width * 4, m_compressedImg, m_width*m_height*4, m_width, m_height);
+		m_compressedSize = NvPipe_Encode(m_encoder, rgba, m_width * 4, m_compressedImg, m_width*m_height*4, m_width, m_height, true);
 		if (m_compressedSize == 0 )
 		{
 	        std::cerr << "cNvPipeEncode@encodeAndWrap: Encoding error: " << NvPipe_GetError(m_encoder) << std::endl;

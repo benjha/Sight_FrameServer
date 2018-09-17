@@ -14,7 +14,7 @@ var stop 	= false;
 var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
-var jpegCompression = false;
+var jpegCompression = false; 
 var h264Compression = true;
 var noCompression   = false;
 var playerH264; 
@@ -51,7 +51,7 @@ function createMainCanvasAndContext ()
     canvas = document.createElement('canvas');
     canvas.className = "canvas";
     canvas.width = 1920;
-    canvas.height = 1088;
+    canvas.height = 1080;
     canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);";        
     document.getElementById('main').appendChild(canvas);
     ctx = canvas.getContext('2d');     
