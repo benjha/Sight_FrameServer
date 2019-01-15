@@ -12,7 +12,7 @@ $~/Sight_FrameServer/cd Release
 $~/Sight_FrameServer/Release/make
 
 
-Note: all auxiliary files for compilation are available in Release directory. If TurboJPEG Library and/or LibPNG12 are not installing in default locations edit makefile file to add the new paths.
+Note: all auxiliary files for compilation are available in Release directory. If TurboJPEG Library and/or LibPNG12 are not installed in default locations edit makefile file to add the new paths.
 
 NvPipe and Broadway.js Notes:
 -Client uses Broadway.js for H264 decoding, thus only H264 encoding is supported using NvPipe.
