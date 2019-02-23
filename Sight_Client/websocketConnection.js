@@ -6,7 +6,7 @@ var output;
 var canvas;
 var canvasH264;
 var jpegImg;
-var wsUri	= "ws://localhost:9002/";
+var wsUri	= "ws://localhost:9003/";
 var reader	= new FileReader();
 var ctx;
 var imgdata;
@@ -15,13 +15,19 @@ var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
 var jpegCompression = false; 
-var h264Compression = true;
+var h264Compression = false;
+var h264MP4Compression = true;
 var noCompression   = false;
-var playerH264; 
-
-//var imageheight = 512;
-//var imagewidth	= 512;
-
+var playerH264; // from Broadway.cs 
+// when using h264MP4Compression:
+var mediaSource={};
+var video;
+var bufArray;
+var arraySize = 0;
+var sourceBuffer={};
+// canvas resolution:
+var width = 1920;
+var height = 1088;
 function canvasResize ()
 {
 console.log (canvas.width + ", " + canvas.height);
@@ -50,11 +56,52 @@ function createMainCanvasAndContext ()
 {
     canvas = document.createElement('canvas');
     canvas.className = "canvas";
-    canvas.width = 1920;
-    canvas.height = 1080;
+    canvas.width = width;
+    canvas.height = height-8;
     canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);";        
     document.getElementById('main').appendChild(canvas);
     ctx = canvas.getContext('2d');     
+}
+
+function initVideoh264mp4 ()
+{
+    mediaSource = new MediaSource();
+    video = document.createElement('video');
+    video.id = "video";
+    video.width = width;
+    video.height = height;
+    video.autoplay = false;
+    video.className = "canvas";
+    video.src = window.URL.createObjectURL(mediaSource);
+    bufArray = new Array ();
+    document.getElementById('main').appendChild(video);    
+    // for sight is baseline level 4.1 mbps 32 fps 30
+    // https://cconcolato.github.io/media-mime-support/
+    // http://blog.mediacoderhq.com/h264-profiles-and-levels/
+    var mimecodec = 'video/mp4; codecs="avc1.420029"';
+    //var mimecodec = 'video/mp4;codecs="avc1.64001E"';// 'video/mp4; codecs="avc1.42E01E"';
+    //var mimecodec = 'video/mp4; codecs="avc1.42E01E"';
+    // 0x64=100 "High Profile"; 0x00 No constraints; 0x1F=31 "Level 3.1"
+    //var mimecodec = 'video/mp4; codecs="avc1.64001F"';
+    mediaSource.addEventListener('sourceopen', function() {
+        //console.log("sourceOpen...");
+        // get a source buffer to contain video data this we'll receive from the server
+        //console.log (that.video.canPlayType(mimecodec));
+        sourceBuffer = mediaSource.addSourceBuffer(mimecodec);
+    });
+    mediaSource.addEventListener('webkitsourceopen', function() {
+        //console.log("webkitsourceopen...");
+        // get a source buffer to contain video data this we'll receive from the server
+        sourceBuffer = mediaSource.addSourceBuffer(mimecodec);
+        //that.sourceBuffer = that.mediaSource.addSourceBuffer('video/mp4;codecs="avc1.64001E"');
+    });
+    //sourceBuffer.updateend = function(evt) { nextH264MP4Frame (evt) };
+    
+    sourceBuffer.addEventListener('updateend', function () {
+      console.log(mediaSource.readyState); // ended
+    });
+    
+    addMyListeners(video);
 }
 
 function init() 
@@ -87,13 +134,17 @@ function init()
         playerH264.canvas.style = "-moz-transform: scale(-1, 1); -webkit-transform: scale(1, -1); -o-transform: scale(1, -1); transform: scale(1, -1);";  
         addMyListeners (playerH264.canvas);
 	}
+	else if (h264MP4Compression)
+	{
+		initVideoh264mp4 ();
+	}
     else if (noCompression) // no compression
     {
         createMainCanvasAndContext ();
         addMyListeners (canvas);
         imgdata = ctx.getImageData(0,0,canvas.width,canvas.height);
     }
-}
+} 
 
 function loadPixels ()
 {
@@ -126,28 +177,47 @@ function connectAndCallbacks ()
 // connection has been opened
 function onOpen(evt)
 {
-	
+    if(h264MP4Compression)
+    {
+ // https://stackoverflow.com/a/40238567
+    var playPromise = video.play();
+    if ( playPromise !== undefined) {
+        console.log("Got play promise; waiting for fulfilment...");
+        playPromise.then(function() 
+        {
+            console.log("Play promise fulfilled! Starting playback.");
+            video.connected = true;
+            //vframe.width = that.width;
+            //vframe.height = that.height;
+            video.currentTime = 0;
+        }).catch(function(error) {
+            console.log("Failed to start playback: "+error);
+        });
+        }        
+    }
 }
 
 function fileReaderError (e)
 {
 	console.error("FileReader error. Code " + event.target.error.code);
 }
+// method called when sourceBuffer update ends
+function nextH264MP4Frame (e)
+{
+    websocket.send ("NXTFR");
+}
 
 // this method is launched when FileReader ends loading the blob
 function nextBlob (e)
 {
 	if (!stop)
-	{
-		//var event = new CompositeStream();
-		//event.appendBytes(0);     // type (u8 0)  0 identifies an event of type MESSAGE 
-		//event.appendBytes ("NXTFR");
-		//websocket.send (event.consume(event.length));
+    {
         if (jpegCompression || noCompression)
             websocket.send ("NXTFR");
 	}
 	//console.log (stop);
 }
+
 
 function Uint8ToString(u8a){
   var CHUNK_SZ = 0x8000;
@@ -157,15 +227,14 @@ function Uint8ToString(u8a){
   }
   return c.join("");
 }
-
-
-// readBlob is called when reader.readAsBinaryString(blob); from onMessage method occurs
+// readBlob is called when reader.readAsBinaryString(blob)
+// from onMessage method occurs
 function readBlob (e)
 {
 	var i,j=0;
-
 	if (jpegCompression)
 	{
+        console.log ("jpegCompression");
 		var dataUrl = reader.result;
 		// removing the (blank) header, keep pixels
 		var img = dataUrl.split(',')[1];
@@ -174,16 +243,19 @@ function readBlob (e)
 	else if (h264Compression)
 	{
 		var frame = new Uint8Array(reader.result);
-        	//console.log (frame);
-		playerH264.decode (frame);
-        
+    	//console.log (frame);
+		playerH264.decode (frame);        
 	}
+    else if (h264MP4Compression)
+    {
+        //console.log ("h264MP4Compression");
+        decode(reader.result);
+    }
 	else if (noCompression)
 	{
-        	console.log("No compression");
+        console.log("No compression");
 		// comment this when using jpeg compression
 		var img = new Uint8Array(reader.result);
-	
 		// comment this when using jpeg compression
 	 	for(i=0;i<imgdata.data.length;i+=4)
 		{
@@ -196,7 +268,54 @@ function readBlob (e)
 		// comment this when using jpeg compression
 		ctx.putImageData(imgdata,0,0);
 	}
-        
+}
+// Video decoding  function when using h264MP4Compression
+function decode (frame)
+{
+    var frame = new Uint8Array(reader.result);
+    bufArray.push(frame);
+    arraySize+=frame.length;
+    //console.log(bufArray.length);
+    
+    if (!sourceBuffer.updating)
+    {
+        var streamBuffer = new Uint8Array(arraySize);
+        var i=0;
+        var nchunks=0;
+        while (bufArray.length > 0)
+        {
+            var b = bufArray.shift();
+            //console.log (i);
+            streamBuffer.set(b, i);
+            i += b.length;
+            nchunks+=1;
+        }
+        arraySize = 0;
+        // Add the received data to the source buffer
+        sourceBuffer.appendBuffer(streamBuffer);
+        // TODO: Performance Metrics
+        //tnow = performance.now();
+        //var logmsg = 'Frame: ' + this.frame+ '(in '+nchunks+' chunks)';
+        //if (this.timeAtLastFrame >= 0)
+        //{
+        //    var dt = Math.round(tnow - this.timeAtLastFrame);
+        //    logmsg += '; dt = ' + dt + 'ms (' + 1000/dt + ' fps)' ;
+        //    logmsg += '\n' + Array(Math.round(dt/10)).join('*');
+        //}
+        //timeAtLastFrame = tnow;
+        //document.getElementById('logarea').value = logmsg;
+        //console.log(logmsg);
+    }
+    // variable used for perfomance metrics
+    //frame++;
+    if (video.paused)
+    {
+        video.play();
+    }
+    //TODO: Figure out a smarter way to manage the frame size (i.e. cache it?)
+    video.width = video.videoWidth;
+    video.height = video.videoHeight;    
+    
 }
 
 // message from the server
@@ -214,28 +333,31 @@ function onMessage(e)
 		{
 		    reader.readAsDataURL(blob);
 		}
-		else if (h264Compression || noCompression)
+		else if (h264Compression || noCompression || h264MP4Compression)
 		{
             reader.readAsArrayBuffer(blob);
 		}
         
 	}
 }
-
 // if there is an error
 function onError (e)
 {
+    if (h264MP4Compression)
+        video.connected = false;
 	console.log("Websocket Error: ", e);
 	// Custom functions for handling errors
 	// handleErrors (e);
 }
-
 // when closing
 function onClose (e)
 {
-
 	console.log ("Connection closed", e);
-	
+    if (h264MP4Compression)
+    {
+        video.connected = false;
+        sourceBuffer.remove(0, 10000000);        
+    }
 }
 
 function startingConnection()
