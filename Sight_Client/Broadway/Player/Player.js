@@ -101,7 +101,7 @@ p.decode(<binary>);
     var lastWidth;
     var lastHeight;
     var onPictureDecoded = function(buffer, width, height, infos) {
-    websocket.send ("NXTFR");    
+
         //console.log ("onPictureDecoded");
         //console.log (height);
       self.onPictureDecoded(buffer, width, height, infos);
@@ -130,7 +130,18 @@ p.decode(<binary>);
         });
       };
 
-      
+         websocket.send ("NXTFR");    
+        // Performance metrics
+        var tnow = performance.now();
+        var logmsg=" ";// = 'Frame: ' + this.frame+ '(in '+nchunks+' chunks)';
+        if (timeAtLastFrame >= 0)
+        {
+            var dt = Math.round(tnow - timeAtLastFrame);
+            logmsg += '; dt = ' + dt + 'ms (' + 1000/dt + ' fps)' ;
+            logmsg += '\n' + Array(Math.round(dt/10)).join('*');
+        }
+        timeAtLastFrame = tnow;        
+        console.log(logmsg);        
     };
     
     // provide size

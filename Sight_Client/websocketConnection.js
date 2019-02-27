@@ -14,9 +14,9 @@ var stop 	= false;
 var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
-var jpegCompression = false; 
+var jpegCompression = true; 
 var h264Compression = false;
-var h264MP4Compression = true;
+var h264MP4Compression = false;
 var noCompression   = false;
 var playerH264; // from Broadway.cs 
 // when using h264MP4Compression:
@@ -25,12 +25,15 @@ var video;
 var bufArray;
 var arraySize = 0;
 var sourceBuffer={};
+var timeAtLastFrame = -1; // used for performance metrics
 // canvas resolution:
-var width = 1920;
-var height = 1088;
+//var width = 1920;
+//var height = 1088;
+var width = 3840;
+var height = 2160;
 function canvasResize ()
 {
-console.log (canvas.width + ", " + canvas.height);
+    //console.log (canvas.width + ", " + canvas.height);
 }
 
 function addMyListeners (c)
@@ -71,15 +74,15 @@ function initVideoh264mp4 ()
     video.width = width;
     video.height = height;
     video.autoplay = false;
-    video.className = "canvas";
+    //video.className = "canvas";
     video.src = window.URL.createObjectURL(mediaSource);
     bufArray = new Array ();
     document.getElementById('main').appendChild(video);    
     // for sight is baseline level 4.1 mbps 32 fps 30
     // https://cconcolato.github.io/media-mime-support/
     // http://blog.mediacoderhq.com/h264-profiles-and-levels/
-    var mimecodec = 'video/mp4; codecs="avc1.420029"';
-    //var mimecodec = 'video/mp4;codecs="avc1.64001E"';// 'video/mp4; codecs="avc1.42E01E"';
+    //var mimecodec = 'video/mp4; codecs="avc1.420028"';
+    var mimecodec = 'video/mp4;codecs="avc1.64001E"';// 'video/mp4; codecs="avc1.42E01E"';
     //var mimecodec = 'video/mp4; codecs="avc1.42E01E"';
     // 0x64=100 "High Profile"; 0x00 No constraints; 0x1F=31 "Level 3.1"
     //var mimecodec = 'video/mp4; codecs="avc1.64001F"';
@@ -95,11 +98,8 @@ function initVideoh264mp4 ()
         sourceBuffer = mediaSource.addSourceBuffer(mimecodec);
         //that.sourceBuffer = that.mediaSource.addSourceBuffer('video/mp4;codecs="avc1.64001E"');
     });
-    //sourceBuffer.updateend = function(evt) { nextH264MP4Frame (evt) };
-    
-    sourceBuffer.addEventListener('updateend', function () {
-      console.log(mediaSource.readyState); // ended
-    });
+    // this seems not to work yet
+    sourceBuffer.updateend = function(evt) { nextH264MP4Frame (evt) };
     
     addMyListeners(video);
 }
@@ -162,9 +162,12 @@ function connectAndCallbacks ()
 	websocket.onerror 	= function(evt) { onError	(evt)	};
 
 	// sets websocket's binary messages as ArrayBuffer type
-    	//websocket.binaryType = "arraybuffer";	
+    // need to check if arraybuffer works for Broadway.cs
+    if (h264MP4Compression || h264Compression)
+        websocket.binaryType = "arraybuffer";
+    else
 	// sets websocket's binary messages as Blob type by default is Blob type
-	//websocket.binaryType = "blob";
+	   websocket.binaryType = "blob";
 	
 	reader.onload		= function(evt) { readBlob		(evt) };
 	reader.onloadend	= function(evt) { nextBlob		(evt) };
@@ -174,7 +177,7 @@ function connectAndCallbacks ()
 	peripherals.init(websocket);
 }
 
-// connection has been opened
+// websocket connection has been opened
 function onOpen(evt)
 {
     if(h264MP4Compression)
@@ -204,7 +207,8 @@ function fileReaderError (e)
 // method called when sourceBuffer update ends
 function nextH264MP4Frame (e)
 {
-    websocket.send ("NXTFR");
+    console.log ("updateend");
+    //websocket.send ("NXTFR");
 }
 
 // this method is launched when FileReader ends loading the blob
@@ -212,7 +216,7 @@ function nextBlob (e)
 {
 	if (!stop)
     {
-        if (jpegCompression || noCompression)
+        if (jpegCompression || noCompression )
             websocket.send ("NXTFR");
 	}
 	//console.log (stop);
@@ -234,26 +238,15 @@ function readBlob (e)
 	var i,j=0;
 	if (jpegCompression)
 	{
-        console.log ("jpegCompression");
+        //console.log ("jpegCompression");
 		var dataUrl = reader.result;
 		// removing the (blank) header, keep pixels
 		var img = dataUrl.split(',')[1];
 		jpegImg.src = 'data:image/jpg;base64,' + img;
 	}
-	else if (h264Compression)
-	{
-		var frame = new Uint8Array(reader.result);
-    	//console.log (frame);
-		playerH264.decode (frame);        
-	}
-    else if (h264MP4Compression)
-    {
-        //console.log ("h264MP4Compression");
-        decode(reader.result);
-    }
 	else if (noCompression)
 	{
-        console.log("No compression");
+        //console.log("No compression");
 		// comment this when using jpeg compression
 		var img = new Uint8Array(reader.result);
 		// comment this when using jpeg compression
@@ -269,16 +262,26 @@ function readBlob (e)
 		ctx.putImageData(imgdata,0,0);
 	}
 }
-// Video decoding  function when using h264MP4Compression
-function decode (frame)
+// Video decoding function when using h264 and Broadway.cs
+function decodeH264  (frame)
 {
-    var frame = new Uint8Array(reader.result);
+    var frame = new Uint8Array(frame.data);
+    //console.log (decodeH264);
+	playerH264.decode (frame);            
+}
+// Video decoding  function when using h264 and MP4 wrap
+function decodeH264MP4 (frame)
+{
+    var frame = new Uint8Array(frame.data);
     bufArray.push(frame);
     arraySize+=frame.length;
-    //console.log(bufArray.length);
     
     if (!sourceBuffer.updating)
     {
+        //var myBufferedRange = sourceBuffer.buffered;
+        //console.log (myBufferedRange.start(0));
+        //console.log (myBufferedRange.end(0));
+        //console.log("decoding, video paused " + video.paused);
         var streamBuffer = new Uint8Array(arraySize);
         var i=0;
         var nchunks=0;
@@ -290,21 +293,21 @@ function decode (frame)
             i += b.length;
             nchunks+=1;
         }
+        websocket.send("NXTFR");
+
         arraySize = 0;
         // Add the received data to the source buffer
         sourceBuffer.appendBuffer(streamBuffer);
-        // TODO: Performance Metrics
-        //tnow = performance.now();
-        //var logmsg = 'Frame: ' + this.frame+ '(in '+nchunks+' chunks)';
-        //if (this.timeAtLastFrame >= 0)
-        //{
-        //    var dt = Math.round(tnow - this.timeAtLastFrame);
-        //    logmsg += '; dt = ' + dt + 'ms (' + 1000/dt + ' fps)' ;
-        //    logmsg += '\n' + Array(Math.round(dt/10)).join('*');
-        //}
-        //timeAtLastFrame = tnow;
-        //document.getElementById('logarea').value = logmsg;
-        //console.log(logmsg);
+        var tnow = performance.now();
+        var logmsg=" ";// = 'Frame: ' + this.frame+ '(in '+nchunks+' chunks)';
+        if (timeAtLastFrame >= 0)
+        {
+            var dt = Math.round(tnow - timeAtLastFrame);
+            logmsg += '; dt = ' + dt + 'ms (' + 1000/dt + ' fps)' ;
+            logmsg += '\n' + Array(Math.round(dt/10)).join('*');
+        }
+        timeAtLastFrame = tnow;        
+        console.log(logmsg);    
     }
     // variable used for perfomance metrics
     //frame++;
@@ -313,31 +316,32 @@ function decode (frame)
         video.play();
     }
     //TODO: Figure out a smarter way to manage the frame size (i.e. cache it?)
-    video.width = video.videoWidth;
-    video.height = video.videoHeight;    
-    
+    //video.width = video.videoWidth;
+    //video.height = video.videoHeight;    
 }
 
 // message from the server
 function onMessage(e)
 {
-	if (typeof e.data == "string")
-	{
-		console.log ("String msg: ", e, e.data);
-	}
-	else if (e.data instanceof Blob)
-	{
-		var blob = e.data;
-		
-		if (jpegCompression)
-		{
-		    reader.readAsDataURL(blob);
-		}
-		else if (h264Compression || noCompression || h264MP4Compression)
-		{
-            reader.readAsArrayBuffer(blob);
-		}
-        
+    if (typeof e.data == "string")
+    {
+        console.log ("String msg: ", e, e.data);
+        return;
+    }
+    if (h264MP4Compression)
+        decodeH264MP4 (e);
+    else if (h264Compression)
+        decodeH264 (e);
+    else
+    {
+        if (e.data instanceof Blob)
+        {
+            var blob = e.data;
+            if (jpegCompression)
+                reader.readAsDataURL(blob);
+            else if ( noCompression )
+                reader.readAsArrayBuffer(blob);
+       }
 	}
 }
 // if there is an error
