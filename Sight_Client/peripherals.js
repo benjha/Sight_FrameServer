@@ -29,7 +29,7 @@ var doKeyEvent = function doKeyEvent($this, key, downFlag) {
     event.appendUint32(key);
 
 	//console.log (key);
-	console.log (event.chunks[3]);
+	//console.log (event.chunks[3]);
     sendBytes($this, event.consume(event.length));
 }
 
@@ -42,7 +42,7 @@ var getKey = function getKey(e) {
     var n = e.which || e.keyCode;
     var val;
 
-   console.log(n);
+   //console.log(n);
 
     // Partial switch of remaining keys. May require adjustment.
     switch (n) {

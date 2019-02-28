@@ -15,8 +15,8 @@ var mouseDownFlag = false;
 // Enables/disables JPEG compression. 
 // JPEG compression should be enabled/disabled in the server in cBroadcastServer.h
 var jpegCompression = true; 
-var h264Compression = false;
-var h264MP4Compression = false;
+var h264Compression = false; // Broadway.cs decoder
+var h264MP4Compression = false; // Media Source Extensions decoder
 var noCompression   = false;
 var playerH264; // from Broadway.cs 
 // when using h264MP4Compression:
@@ -217,7 +217,10 @@ function nextBlob (e)
 	if (!stop)
     {
         if (jpegCompression || noCompression )
+        {
             websocket.send ("NXTFR");
+            getPerformance ();
+        }
 	}
 	//console.log (stop);
 }
@@ -298,16 +301,7 @@ function decodeH264MP4 (frame)
         arraySize = 0;
         // Add the received data to the source buffer
         sourceBuffer.appendBuffer(streamBuffer);
-        var tnow = performance.now();
-        var logmsg=" ";// = 'Frame: ' + this.frame+ '(in '+nchunks+' chunks)';
-        if (timeAtLastFrame >= 0)
-        {
-            var dt = Math.round(tnow - timeAtLastFrame);
-            logmsg += '; dt = ' + dt + 'ms (' + 1000/dt + ' fps)' ;
-            logmsg += '\n' + Array(Math.round(dt/10)).join('*');
-        }
-        timeAtLastFrame = tnow;        
-        console.log(logmsg);    
+        getPerformance();
     }
     // variable used for perfomance metrics
     //frame++;
@@ -395,6 +389,27 @@ function closingConnection()
 	//websocket.close ();
 }
 
+var elapsed=0;
+var updateMillis = 1000.0;
+function getPerformance ()
+{
+    var tnow = performance.now();
+    var logmsg=" ";// = 'Frame: ' + this.frame+ '(in '+nchunks+' chunks)';
+    if (timeAtLastFrame >= 0)
+    {
+        
+        var dt = Math.round(tnow - timeAtLastFrame);
+        logmsg += ' dt ' + dt + ' ms fps: ' + 1000/dt + ' ' + performance.now();
+        elapsed +=dt;
+    }
+    timeAtLastFrame = tnow;        
+    // print every 1 second
+    if (elapsed>=updateMillis)
+    {
+        console.log(logmsg);
+        elapsed = 0; 
+    }
+}
 
 window.addEventListener("load", init, false);  
 
